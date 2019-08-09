@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO"
+    crossorigin="anonymous">
+  <title>EmChat</title>
+  <style>
+    #messages{
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      height:300px;
+    }
+    body {
+        background-color: LightGray;
+    }
+    </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="row">
+      <div class="col-md-6 offset-md-3 col-sm-12">
+        <div class="card text-white bg-dark mb-3">
+          <div class="container text-right">
+            <div id="status"></div>
+          </div>
+          <div class="card-body" id="chat">
+            <div class="card-header text-center">
+              <h1>Emchat</h1>
+            </div>
+            <div class="card border-dark mb-3">
+              <div class="card-body text-dark">
+                <h4 class="card-title">Setting</h4>
+                <div class="form-group">
+                  <label for="exampleInputEmail1">Chanel ID</label>
+                  <input type="text" id="livechat" class="form-control" placeholder="livechat ID...">
+                </div>
+                <div class="form-group">
+                  <label for="exampleInputEmail1">Display Name</label>
+                  <input type="text" id="username" class="form-control" placeholder="displayname...">
+                </div>
+              </div>
+            </div>
+            <div class="form-group card mb-1">
+              <div id="messages" class="card-block text-dark"></div>
+            </div>
+            <div id="chat" class="form-group mb-1">
+              <textarea id="textarea" class="form-control" placeholder="Enter message..."></textarea>
+            </div>
+            <div class="form-group mb-4">
+              <button id="send" type="button" class="btn btn-success btn-md btn-block">Send</button>
+            </div>
+            <div class="row">
+              <div class="col-md-6">
+                <button id="clear" type="button" class="btn btn-danger btn-md btn-block">Clear Text</button>
+              </div>
+              <div class="col-md-6">
+                <button id="disconnect" type="button" class="btn btn-info btn-md btn-block">disconnect</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.js"></script>
+
+  <script>
+    (function () {
+      var element = function (id) {
+        return document.getElementById(id);
+      }
+      // Get Elements
+      var status = element('status');
+      var messages = element('messages');
+      var textarea = element('textarea');
+      var username = element('username');
+      var livechat = element('livechat');
+      var clearBtn = element('clear');
+      var send = element('send');
+
+      // Set default status
+      status.textContent = 'Offline'
+
+
+      function scrollToBottom() {
+        messages.scrollTop = messages.scrollHeight;
+      }
+
+      // Connect to socket.io
+      var socket = io.connect('http://52.77.255.64:3101');
+      var socket = io.connect('http://localhost:3101');
+
+      livechat.addEventListener('keydown', (event) => {
+        if (event.which === 13 && event.shiftKey == false) {
+          if (socket !== undefined) {
+            console.log('Connected to socket...');
+            // Handle Output
+            socket.emit(livechat.value)
+            socket.on(livechat.value, function (data, error) {
+              status.textContent = 'Online'
+              var message = document.createElement('div');
+              message.setAttribute('class', 'chat-message');
+              if (data.length > 0) {
+                messages.textContent = '';
+                for (var i = 0; i < data.length; i++) {
+                  var message = document.createElement('div');
+                  message.setAttribute('class', 'chat-message');
+                  if (data[i].displayName && data[i].text) {
+                    message.append(data[i].displayName + ": " + data[i].text);
+                    messages.appendChild(message);
+                    scrollToBottom();
+                  }
+                }
+              }
+              else {
+                if (data.displayName && data.text) {
+                  message.append(data.displayName + ": " + data.text);
+                  messages.appendChild(message);
+                  scrollToBottom();
+                }
+              }
+            })
+            clearBtn.addEventListener('click', function () {
+              socket.emit('clear');
+              messages.textContent = '';
+            });
+          }
+        }
+      })
+      send.addEventListener('click', function (event) {
+        socket.emit(livechat.value, {
+          displayName: username.value,
+          text: textarea.value
+        });
+        event.preventDefault();
+        textarea.value = '';
+      })
+
+      textarea.addEventListener('keydown', function (event) {
+        if (event.which === 13 && event.shiftKey == false) {
+          // Emit to server input
+          socket.emit(livechat.value, {
+            displayName: username.value,
+            image: "https://s3-ap-southeast-1.amazonaws.com/s3-culi.deknerd.com/asset/deknerd_profile.png?fbclid=IwAR2dvFJlFsDTJHZq4hQCXEIjF9TpX87jL9TsCXeHeq_LGTsy5VqpxTqM6pY",
+            text: textarea.value
+          });
+          event.preventDefault();
+          textarea.value = '';
+        }
+      })
+
+      var disconnect = element('disconnect');
+      disconnect.addEventListener('click', function () {
+        socket.disconnect();
+        messages.textContent = '';
+      })
+    })();
+  </script>
+</body>
+
+</html>
