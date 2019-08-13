@@ -8,7 +8,7 @@ const init = require('./configs/init');
 
 let chatChanel = io.of('/');
 
-http.createServer(app).listen(8091, async() => {
+http.createServer(app).listen(8091, async () => {
 
     await init.resetState(chatChanel)
 
@@ -16,6 +16,8 @@ http.createServer(app).listen(8091, async() => {
     lib.connectChat(chatChanel, 'sent_msg-manager')
     lib.connectChat(chatChanel, 'mymove')
     lib.connectChat(chatChanel, 'player_enter')
+
+    // lib.initSaveChat(['msg', 'sent_msg-manager', 'mymove', 'player_enter'])
 
     console.log(`Socket server Start!`)
 })

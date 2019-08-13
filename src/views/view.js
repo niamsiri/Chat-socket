@@ -15,13 +15,12 @@ router.get('/chat/:room/:username', async (request, response) => {
     const username = request.params.username
     let chatList = JSON.parse(await redis.get(room))
     
-    // response.set('Content-Type', 'application/javascript');
     response.render('chat.html', {
         room: room,
         username: username,
         chatList:  JSON.stringify(chatList)
     });
-    // response.sendFile(path.join(__dirname + '/chat.html'));
+
 });
 
 module.exports = router;

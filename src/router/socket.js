@@ -26,8 +26,8 @@ router.get('/create/:room', async (request, response) => {
 router.get('/history/:room', async (request, response) => {
 
     let room = request.params.room
-    let history = await redis.get(room)
-    return response.status(200).json(history)
+    let history = JSON.parse(await redis.get(room))
+    return response.status(200).json(history ? history : [])
 })
 
 router.get('/rooms', async (request, response) => {
@@ -35,6 +35,15 @@ router.get('/rooms', async (request, response) => {
     let rooms = await redis.get("chanelsOpened")
     rooms = rooms ? rooms : [];
     return response.status(200).send(rooms)
+
+})
+
+router.get('/rooms/clearall', async (request, response) => {
+
+    await redis.delete("chanelsOpened");
+    await redis.clearCache()
+
+    return response.status(200).send("Clean all database. No room opened. No history chats.")
 
 })
 

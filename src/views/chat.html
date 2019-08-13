@@ -4,11 +4,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
-    integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
-  <title>EmChat</title>
+  <title>Tester Chat</title>
   <style>
+    @import url("https://fonts.googleapis.com/css?family=Kanit|Prompt");
+    @import url("https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css");
+
     #messages {
       display: flex;
       flex-direction: column;
@@ -17,39 +17,45 @@
     }
 
     body {
-      background-color: LightGray;
+      background: url("https://mdbootstrap.com/img/Photos/Others/background.jpg");
+      font-family: "Prompt", sans-serif;
+    }
+
+    .chat-flex {
+      background-color: whitesmoke;
+      padding: 10px;
+    }
+
+    .text-blod {
+      font-weight: bold;
+    }
+
+    .border-orange {
+      border: 2px solid orange;
     }
   </style>
 </head>
 
 <body>
   <div class="container">
-    <div class="row">
+    <div class="row mt-5">
       <div class="col-md-6 offset-md-3 col-sm-12">
-        <div class="card text-white bg-dark mb-3">
+        <div class="card shadow text-white mb-3">
           <div class="container text-right">
-            <div id="status"></div>
+            <div id="status" class="text-success text-blod"></div>
           </div>
           <div class="card-body" id="chat">
-            <div class="card-header text-center">
-              <h1>Chat</h1>
+            <div class="text-center">
+              <h1 class="text-dark text-blod">Tester Chat</h1>
             </div>
-            <div class="form-group card mb-1">
+            <div class="form-group card chat-flex border-orange mb-1">
               <div id="messages" class="card-block text-dark"></div>
             </div>
-            <div id="chat" class="form-group mb-1">
-              <textarea id="textarea" class="form-control" placeholder="Enter message..."></textarea>
+            <div id="chat" class="form-group border-orange mb-1">
+              <textarea id="textarea" class="form-control" placeholder="กรอกข้อความที่นี่..."></textarea>
             </div>
-            <div class="form-group mb-4">
-              <button id="send" type="button" class="btn btn-success btn-md btn-block">Send</button>
-            </div>
-            <div class="row">
-              <div class="col-md-6">
-                <button id="clear" type="button" class="btn btn-danger btn-md btn-block">Clear Text</button>
-              </div>
-              <div class="col-md-6">
-                <button id="disconnect" type="button" class="btn btn-info btn-md btn-block">disconnect</button>
-              </div>
+            <div class="form-group mb-2">
+              <button id="send" type="button" class="btn btn-success btn-md btn-block">ส่ง</button>
             </div>
           </div>
         </div>
@@ -63,12 +69,12 @@
     (async function () {
       var room = "<%= room %>";
       var username = "<%= username %>";
-      var chatList = JSON.parse(await $.ajax({
-        url: 'http://localhost:8091/api/socket/history/msg',
+      var chatList = await $.ajax({
+        url: 'http://103.253.72.89:8091/api/socket/history/' + room,
         complete: async function (data) {
           return await data
         }
-      }))
+      })
 
       var element = function (id) {
         return document.getElementById(id);
@@ -79,7 +85,6 @@
       var messages = element('messages');
       var textarea = element('textarea');
       var livechat = room
-      var clearBtn = element('clear');
       var send = element('send');
 
       // console.log(JSON.parse(chatList))
@@ -92,57 +97,47 @@
       }
 
       // Connect to socket.io
-      // var socket = io.connect('http://103.253.72.89:3101');
-      var socket = io.connect('http://localhost:3101');
+      var socket = io.connect('http://103.253.72.89:3101');
+      // var socket = io.connect('http://localhost:3101');
 
 
       if (socket !== undefined) {
-        console.log('Connected to socket...');
-        // Handle Output
+
+        console.log('Connected to socket success!');
+
+        status.textContent = 'Online'
+
         for (var i = 0; i < chatList.length; i++) {
           var message = document.createElement('div');
           message.setAttribute('class', 'chat-message');
-          if (chatList[i].displayName && chatList[i].text) {
-            message.append(chatList[i].displayName + ": " + chatList[i].text);
+          if (chatList[i].username && chatList[i].message) {
+            message.append(chatList[i].username + ": " + chatList[i].message);
             messages.appendChild(message);
           }
+
         }
         socket.emit(livechat)
         socket.on(livechat, function (data, error) {
-          status.textContent = 'Online'
           var message = document.createElement('div');
           message.setAttribute('class', 'chat-message');
-          if (data.length > 0) {
-            messages.textContent = '';
-            for (var i = 0; i < data.length; i++) {
-              var message = document.createElement('div');
-              message.setAttribute('class', 'chat-message');
-              if (data[i].displayName && data[i].text) {
-                message.append(data[i].displayName + ": " + data[i].text);
-                messages.appendChild(message);
-                scrollToBottom();
-              }
-            }
-          }
-          else {
-            if (data.displayName && data.text) {
-              message.append(data.displayName + ": " + data.text);
-              messages.appendChild(message);
-              scrollToBottom();
-            }
+          if (data.username && data.message) {
+            message.append(data.username + ": " + data.message);
+            messages.appendChild(message);
+            scrollToBottom();
           }
         })
-        clearBtn.addEventListener('click', function () {
-          socket.emit('clear');
-          messages.textContent = '';
-        });
       }
 
 
       send.addEventListener('click', function (event) {
         socket.emit(livechat, {
-          displayName: username,
-          text: textarea.value
+          session_id: livechat,
+          username: username,
+          user_id: "1",
+          token: "1",
+          message: textarea.value,
+          send_by_id: "1",
+          send_by_name: username,
         });
         event.preventDefault();
         textarea.value = '';
@@ -150,25 +145,21 @@
 
       textarea.addEventListener('keydown', function (event) {
         if (event.which === 13 && event.shiftKey == false) {
-          // Emit to server input
           socket.emit(livechat, {
-            displayName: username,
-            image: "https://s3-ap-southeast-1.amazonaws.com/s3-culi.deknerd.com/asset/deknerd_profile.png?fbclid=IwAR2dvFJlFsDTJHZq4hQCXEIjF9TpX87jL9TsCXeHeq_LGTsy5VqpxTqM6pY",
-            text: textarea.value
+            session_id: livechat,
+            username: username,
+            user_id: "1",
+            token: "1",
+            message: textarea.value,
+            send_by_id: "1",
+            send_by_name: username,
           });
           event.preventDefault();
           textarea.value = '';
         }
       })
 
-      var disconnect = element('disconnect');
-      disconnect.addEventListener('click', function () {
-        socket.disconnect();
-        messages.textContent = '';
-      })
     })();
-
-
   </script>
 </body>
 
