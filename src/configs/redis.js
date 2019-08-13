@@ -1,5 +1,5 @@
 const redis = require('redis')
-const url = require('../construct').REDIS_SERVER
+const url = require('../../construct').REDIS_SERVER
 
 let client = redis.createClient(url);
 

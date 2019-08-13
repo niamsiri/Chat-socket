@@ -23,6 +23,13 @@ router.get('/create/:room', async (request, response) => {
 
 })
 
+router.get('/history/:room', async (request, response) => {
+
+    let room = request.params.room
+    let history = await redis.get(room)
+    return response.status(200).json(history)
+})
+
 router.get('/rooms', async (request, response) => {
 
     let rooms = await redis.get("chanelsOpened")
@@ -35,6 +42,13 @@ router.get('/rooms/clear', async (request, response) => {
 
     await redis.delete("chanelsOpened");
     return response.status(200).send("Delete all rooms in history")
+
+})
+
+router.get('/clear/all', async (request, response) => {
+
+    await redis.clearCache()
+    return response.status(200).send("Delete all Redis")
 
 })
 

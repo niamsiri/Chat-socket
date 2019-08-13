@@ -1,4 +1,4 @@
-const redis = require('../config/redis')
+const redis = require('./redis')
 const livechat = require('../library/socket')
 
 let init = {};

@@ -14,9 +14,13 @@ func.connectChat = (io, chanel) => {
 
         await sockets.on(chanel, async (data) => {
             if (data) {
+                let chatList = JSON.parse(await redis.get(chanel))
+                let historyChat =chatList ? chatList : []
                 let emitChat = data
                 emitChat.id = sockets.id
                 emitChat.created = Date.now()
+                historyChat.push(emitChat)
+                await redis.store(chanel, historyChat)
                 io.emit(chanel, emitChat)
             }
         })

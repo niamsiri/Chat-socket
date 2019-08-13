@@ -5,20 +5,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO"
-    crossorigin="anonymous">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
+    integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
   <title>EmChat</title>
   <style>
-    #messages{
+    #messages {
       display: flex;
       flex-direction: column;
       overflow-y: auto;
-      height:300px;
+      height: 300px;
     }
+
     body {
-        background-color: LightGray;
+      background-color: LightGray;
     }
-    </style>
+  </style>
 </head>
 
 <body>
@@ -31,20 +32,7 @@
           </div>
           <div class="card-body" id="chat">
             <div class="card-header text-center">
-              <h1>Emchat</h1>
-            </div>
-            <div class="card border-dark mb-3">
-              <div class="card-body text-dark">
-                <h4 class="card-title">Setting</h4>
-                <div class="form-group">
-                  <label for="exampleInputEmail1">Chanel ID</label>
-                  <input type="text" id="livechat" class="form-control" placeholder="livechat ID...">
-                </div>
-                <div class="form-group">
-                  <label for="exampleInputEmail1">Display Name</label>
-                  <input type="text" id="username" class="form-control" placeholder="displayname...">
-                </div>
-              </div>
+              <h1>Chat</h1>
             </div>
             <div class="form-group card mb-1">
               <div id="messages" class="card-block text-dark"></div>
@@ -68,25 +56,35 @@
       </div>
     </div>
   </div>
-
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.js"></script>
 
   <script>
-    (function () {
+    (async function () {
+      var room = "<%= room %>";
+      var username = "<%= username %>";
+      var chatList = JSON.parse(await $.ajax({
+        url: 'http://localhost:8091/api/socket/history/msg',
+        complete: async function (data) {
+          return await data
+        }
+      }))
+
       var element = function (id) {
         return document.getElementById(id);
       }
+
       // Get Elements
       var status = element('status');
       var messages = element('messages');
       var textarea = element('textarea');
-      var username = element('username');
-      var livechat = element('livechat');
+      var livechat = room
       var clearBtn = element('clear');
       var send = element('send');
 
+      // console.log(JSON.parse(chatList))
       // Set default status
-      status.textContent = 'Offline'
+      status.textContent = 'Online'
 
 
       function scrollToBottom() {
@@ -94,49 +92,56 @@
       }
 
       // Connect to socket.io
-      var socket = io.connect('http://52.77.255.64:3101');
+      // var socket = io.connect('http://103.253.72.89:3101');
       var socket = io.connect('http://localhost:3101');
 
-      livechat.addEventListener('keydown', (event) => {
-        if (event.which === 13 && event.shiftKey == false) {
-          if (socket !== undefined) {
-            console.log('Connected to socket...');
-            // Handle Output
-            socket.emit(livechat.value)
-            socket.on(livechat.value, function (data, error) {
-              status.textContent = 'Online'
-              var message = document.createElement('div');
-              message.setAttribute('class', 'chat-message');
-              if (data.length > 0) {
-                messages.textContent = '';
-                for (var i = 0; i < data.length; i++) {
-                  var message = document.createElement('div');
-                  message.setAttribute('class', 'chat-message');
-                  if (data[i].displayName && data[i].text) {
-                    message.append(data[i].displayName + ": " + data[i].text);
-                    messages.appendChild(message);
-                    scrollToBottom();
-                  }
-                }
-              }
-              else {
-                if (data.displayName && data.text) {
-                  message.append(data.displayName + ": " + data.text);
-                  messages.appendChild(message);
-                  scrollToBottom();
-                }
-              }
-            })
-            clearBtn.addEventListener('click', function () {
-              socket.emit('clear');
-              messages.textContent = '';
-            });
+
+      if (socket !== undefined) {
+        console.log('Connected to socket...');
+        // Handle Output
+        for (var i = 0; i < chatList.length; i++) {
+          var message = document.createElement('div');
+          message.setAttribute('class', 'chat-message');
+          if (chatList[i].displayName && chatList[i].text) {
+            message.append(chatList[i].displayName + ": " + chatList[i].text);
+            messages.appendChild(message);
           }
         }
-      })
+        socket.emit(livechat)
+        socket.on(livechat, function (data, error) {
+          status.textContent = 'Online'
+          var message = document.createElement('div');
+          message.setAttribute('class', 'chat-message');
+          if (data.length > 0) {
+            messages.textContent = '';
+            for (var i = 0; i < data.length; i++) {
+              var message = document.createElement('div');
+              message.setAttribute('class', 'chat-message');
+              if (data[i].displayName && data[i].text) {
+                message.append(data[i].displayName + ": " + data[i].text);
+                messages.appendChild(message);
+                scrollToBottom();
+              }
+            }
+          }
+          else {
+            if (data.displayName && data.text) {
+              message.append(data.displayName + ": " + data.text);
+              messages.appendChild(message);
+              scrollToBottom();
+            }
+          }
+        })
+        clearBtn.addEventListener('click', function () {
+          socket.emit('clear');
+          messages.textContent = '';
+        });
+      }
+
+
       send.addEventListener('click', function (event) {
-        socket.emit(livechat.value, {
-          displayName: username.value,
+        socket.emit(livechat, {
+          displayName: username,
           text: textarea.value
         });
         event.preventDefault();
@@ -146,8 +151,8 @@
       textarea.addEventListener('keydown', function (event) {
         if (event.which === 13 && event.shiftKey == false) {
           // Emit to server input
-          socket.emit(livechat.value, {
-            displayName: username.value,
+          socket.emit(livechat, {
+            displayName: username,
             image: "https://s3-ap-southeast-1.amazonaws.com/s3-culi.deknerd.com/asset/deknerd_profile.png?fbclid=IwAR2dvFJlFsDTJHZq4hQCXEIjF9TpX87jL9TsCXeHeq_LGTsy5VqpxTqM6pY",
             text: textarea.value
           });
@@ -162,6 +167,8 @@
         messages.textContent = '';
       })
     })();
+
+
   </script>
 </body>
 
