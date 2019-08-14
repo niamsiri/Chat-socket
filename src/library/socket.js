@@ -8,18 +8,36 @@ func.connectChat = (io, chanel) => {
 
         await sockets.on(chanel, async (data) => {
             if (data) {
-                let chatList = JSON.parse(await redis.get(chanel))
-                let historyChat = chatList ? chatList : []
-                let emitChat = data
-                emitChat.id = sockets.id
-                emitChat.created = Date.now()
-                console.log(emitChat)
-                historyChat.push(emitChat)
-                await redis.store(chanel, historyChat)
-                io.emit(chanel, emitChat)
+
+                let clientCurrent = (JSON.parse(await redis.get('client_'+ data.session_id)))
+
+                let user = clientCurrent.filter(element => {
+                    return element.user_id == data.user_id
+                });
+                if (user.length > 0) {
+                    let chatList = JSON.parse(await redis.get(data.session_id))
+                    let historyChat = chatList ? chatList : []
+
+                    let emitData = {
+                        id: sockets.id,
+                        message: data.message,
+                        send_by_name: user[0].username,
+                        send_by_id: data.user_id,
+                        created: Date.now()
+                    }
+
+                    historyChat.push(emitData)
+                    await redis.store(chanel, historyChat)
+                    io.emit(chanel, emitData)
+                }
+
             }
         })
     })
+}
+
+func.emitChatRoom = (io, chanel, data) => {
+    io.emit(chanel, data)
 }
 
 func.statusChat = async (chanel) => {
