@@ -70,22 +70,23 @@ router.get('/clear/all', async (request, response) => {
 
 router.post('/room/join', async (request, response) => {
 
-    const event = request.body.event
+    const eventName = request.body.eventName
     const branch_id = request.body.branch_id
     const user_id = request.body.user_id
     const username = request.body.username
     const token = request.body.token
 
+    let roomName = eventName + '_' + branch_id
+    let clientName = 'client_' + roomName
+
     let model = {
-        event: event,
+        eventName: eventName,
         branch_id: branch_id,
         user_id: user_id,
         username: username,
+        session_id: roomName,
         token: token,
     }
-
-    let clientName = 'client_' + event + '_' + branch_id
-    let roomName = event + '_' + branch_id
 
     let clients = JSON.parse(await redis.get(clientName))
 
@@ -100,55 +101,57 @@ router.post('/room/join', async (request, response) => {
     chanelCurrent.status == true ? await redis.store("chanelsOpened", chanelCurrent.chanels) : false
 
     let duplicate = clients.filter(element => {
-        return element.branch_id == branch_id && element.user_id == user_id
+        return element.user_id == user_id
     });
 
-    if (duplicate.length == 0 && chanelCurrent.status == true) {
+    if (duplicate.length == 0) {
         clients.push(model)
         await redis.store(clientName, clients)
         lib.emitChatRoom(io, roomName, {
-            event: event,
+            eventName: eventName,
             send_by_id: user_id,
             send_by_name: username
         })
     }
 
     return response.status(200).send({
-        event: event + '_result',
-        result: chanelCurrent.status ? 1 : 0,
-        msg: chanelCurrent.status ? "join room success!" : "join room error!",
+        eventName: eventName + '_result',
+        result: chanelCurrent.status ? 1 : 2,
+        msg: duplicate.length == 0 ? "join room success!" : "joined room.",
         session_id: roomName
     })
 })
 
 router.post('/room/leave', async (request, response) => {
 
-    const event = request.body.event
+    const eventName = request.body.eventName
     const session_id = request.body.session_id
     const user_id = request.body.user_id
 
     let clientName = 'client_' + session_id
-    let clients = JSON.parse(await redis.get('client_' + session_id))
-
+    let clients = JSON.parse(await redis.get(clientName))
+    clients = clients ? clients : []
+    
     let duplicate = clients.filter(element => {
-        return element.session_id == session_id
+        return element.user_id == user_id
     });
 
-
-    let clientsNow = clients.filter(element => {
-        return element.session_id != session_id
-    });
-
-    await redis.store(clientName, clientsNow)
+    for (var i = 0; i < clients.length; i++) {
+        if (clients[i].user_id == user_id) {
+            clients.splice(i, 1);
+        }
+    }
+    
+    await redis.store(clientName, clients)
 
     lib.emitChatRoom(io, session_id, {
-        event: event,
+        eventName: eventName,
         send_by_id: user_id,
         send_by_name: duplicate[0] ? duplicate[0].username : ''
     })
 
     return response.status(200).send({
-        event: event + '_result',
+        eventName: eventName + '_result',
         result: 1,
         msg: "",
     })

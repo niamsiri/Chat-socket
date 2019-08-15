@@ -46,7 +46,7 @@
           </div>
           <div class="card-body" id="chat">
             <div class="text-center">
-              <h1 class="text-dark text-blod">Tester Chat</h1>
+              <h1 class="text-dark text-blod">Chat</h1>
             </div>
             <div class="form-group card chat-flex border-orange mb-1">
               <div id="messages" class="card-block text-dark"></div>
@@ -70,7 +70,7 @@
       var room = "<%= room %>";
       var username = "<%= username %>";
       var chatList = await $.ajax({
-        url: 'http://103.253.72.89:8091/api/socket/history/' + room,
+        url: 'http://localhost:8091/api/socket/history/' + room,
         complete: async function (data) {
           return await data
         }
@@ -97,8 +97,8 @@
       }
 
       // Connect to socket.io
-      var socket = io.connect('http://103.253.72.89:3101');
-      // var socket = io.connect('http://localhost:3101');
+      // var socket = io.connect('http://103.253.72.89:3101');
+      var socket = io.connect('http://localhost:3101');
 
 
       if (socket !== undefined) {
@@ -131,7 +131,7 @@
 
       send.addEventListener('click', function (event) {
         socket.emit(livechat, {
-          event: 'send_public',
+          eventName: 'send_public',
           session_id: livechat,
           user_id: username,
           token: "1",
@@ -144,7 +144,7 @@
       textarea.addEventListener('keydown', function (event) {
         if (event.which === 13 && event.shiftKey == false) {
           socket.emit(livechat, {
-            event: 'send_public',
+            eventName: 'send_public',
             session_id: livechat,
             user_id: username,
             token: "1",

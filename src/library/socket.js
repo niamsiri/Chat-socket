@@ -7,9 +7,10 @@ func.connectChat = (io, chanel) => {
         sockets ? console.log("Chanel " + chanel + " Client : " + sockets.id) : null;
 
         await sockets.on(chanel, async (data) => {
+
             if (data) {
 
-                let clientCurrent = (JSON.parse(await redis.get('client_'+ data.session_id)))
+                let clientCurrent = (JSON.parse(await redis.get('client_' + data.session_id))) || []
 
                 let user = clientCurrent.filter(element => {
                     return element.user_id == data.user_id
